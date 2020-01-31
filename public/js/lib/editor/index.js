@@ -4,7 +4,7 @@ import config from './config'
 import statusBarTemplate from './statusbar.html'
 import toolBarTemplate from './toolbar.html'
 import './markdown-lint'
-import CodeMirrorSpellChecker, { supportLanguages } from './spellcheck'
+import CodeMirrorSpellChecker, { supportLanguages, supportLanguageCodes } from './spellcheck'
 import { initTableEditor } from './table-editor'
 import { options, Alignment, FormatType } from '@susisu/mte-kernel'
 
@@ -529,7 +529,7 @@ export default class Editor {
       return
     }
 
-    if (!supportLanguages.includes(lang)) {
+    if (!supportLanguageCodes.includes(lang)) {
       return
     }
 
@@ -539,7 +539,21 @@ export default class Editor {
     this.spellchecker.setDictLang(lang)
   }
 
+  getExistingSpellcheckLang () {
+    const cookieSpellcheck = Cookies.get('spellcheck')
+
+    if (cookieSpellcheck) {
+      return cookieSpellcheck === 'false' ? undefined : cookieSpellcheck
+    } else {
+      return undefined
+    }
+  }
+
   setSpellcheck () {
+    this.statusSpellcheck.find('ul.dropdown-menu').append(supportLanguages.map(lang => {
+      return $(`<li value="${lang.value}"><a>${lang.name}</a></li>`)
+    }))
+
     const cookieSpellcheck = Cookies.get('spellcheck')
     if (cookieSpellcheck) {
       let mode = null
@@ -548,7 +562,7 @@ export default class Editor {
         mode = defaultEditorMode
       } else {
         mode = 'spell-checker'
-        if (supportLanguages.includes(cookieSpellcheck)) {
+        if (supportLanguageCodes.includes(cookieSpellcheck)) {
           lang = cookieSpellcheck
         }
       }
@@ -721,7 +735,7 @@ export default class Editor {
       placeholder: "← Start by entering a title here\n===\nVisit /features if you don't know what to do.\nHappy hacking :)"
     })
 
-    this.spellchecker = new CodeMirrorSpellChecker(CodeMirror)
+    this.spellchecker = new CodeMirrorSpellChecker(CodeMirror, this.getExistingSpellcheckLang())
     this.tableEditor = initTableEditor(this.editor)
 
     return this.editor
